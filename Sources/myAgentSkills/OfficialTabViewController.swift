@@ -95,12 +95,16 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
         runSearch()
     }
 
+    func controlTextDidChange(_ obj: Notification) {
+        let query = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query.isEmpty else { return }
+        resetSearchState(clearOutput: true)
+    }
+
     @objc private func runSearch() {
         let query = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
-            results = []
-            statusLabel.stringValue = "Type a query to search the official directory."
-            renderResults()
+            resetSearchState(clearOutput: false)
             return
         }
 
@@ -114,6 +118,15 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
                 : "Found \(parsedResults.count) result(s)."
             self.renderResults()
         }
+    }
+
+    private func resetSearchState(clearOutput: Bool) {
+        results = []
+        statusLabel.stringValue = "Type a query to search the official directory."
+        if clearOutput {
+            outputComponents.textView.string = ""
+        }
+        renderResults()
     }
 
     @objc private func promptForSourceInstall() {
