@@ -24,10 +24,6 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
         view = NSView()
         view.translatesAutoresizingMaskIntoConstraints = false
 
-        let titleLabel = NSTextField(labelWithString: "Official skills.sh")
-        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
-        titleLabel.alignment = .left
-
         let descriptionLabel = makeBodyLabel("Search the official skills catalog through the CLI. When you want to install something, this tab hands off to the real interactive CLI in Terminal so its own agent-selection flow stays intact.")
         descriptionLabel.textColor = .secondaryLabelColor
         descriptionLabel.alignment = .left
@@ -71,7 +67,6 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
         content.alignment = .width
         content.translatesAutoresizingMaskIntoConstraints = false
 
-        addFullWidthArrangedSubview(titleLabel, to: content)
         addFullWidthArrangedSubview(descriptionLabel, to: content)
         addFullWidthArrangedSubview(controls, to: content)
         addFullWidthArrangedSubview(statusLabel, to: content)

@@ -34,15 +34,11 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
         view = NSView()
         view.translatesAutoresizingMaskIntoConstraints = false
 
-        let titleLabel = NSTextField(labelWithString: "Installed official skills")
-        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
-        titleLabel.alignment = .left
-
-        let descriptionLabel = makeBodyLabel("Browse the global skill folders you care about most: `~/.agents/skills`, Codex, Claude, and Gemini / Antigravity.")
+        let descriptionLabel = makeBodyLabel("Browse the skill folders you care about most, organized by agent source: `~/.agents/skills`, Codex, Claude, and Gemini / Antigravity.")
         descriptionLabel.textColor = .secondaryLabelColor
         descriptionLabel.alignment = .left
 
-        searchField.placeholderString = "Filter installed skills"
+        searchField.placeholderString = "Filter skills by agent"
         searchField.delegate = self
         sourceFilterTitles.forEach { sourceFilterPopUp.addItem(withTitle: $0) }
         sourceFilterPopUp.selectItem(at: 0)
@@ -86,7 +82,6 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
         content.alignment = .width
         content.translatesAutoresizingMaskIntoConstraints = false
 
-        addFullWidthArrangedSubview(titleLabel, to: content)
         addFullWidthArrangedSubview(descriptionLabel, to: content)
         addFullWidthArrangedSubview(controls, to: content)
         addFullWidthArrangedSubview(statusLabel, to: content)
@@ -174,25 +169,25 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
         let searchQuery = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if allRecords.isEmpty {
-            statusLabel.stringValue = "No skills were found in the configured global folders."
+            statusLabel.stringValue = "No skills were found in the configured agent folders."
             return
         }
 
         if filteredRecords.isEmpty {
             if selectedSource == "All Sources" && searchQuery.isEmpty {
-                statusLabel.stringValue = "No installed skills were found."
+                statusLabel.stringValue = "No agent skills were found."
             } else if searchQuery.isEmpty {
-                statusLabel.stringValue = "No installed skills were found for \(selectedSource)."
+                statusLabel.stringValue = "No skills were found for \(selectedSource)."
             } else {
-                statusLabel.stringValue = "No installed skills matched `\(searchQuery)` in \(selectedSource)."
+                statusLabel.stringValue = "No skills matched `\(searchQuery)` in \(selectedSource)."
             }
             return
         }
 
         if selectedSource == "All Sources" {
-            statusLabel.stringValue = "Showing \(filteredRecords.count) installed skill(s) across your global folders."
+            statusLabel.stringValue = "Showing \(filteredRecords.count) skill(s) across your agent folders."
         } else {
-            statusLabel.stringValue = "Showing \(filteredRecords.count) installed skill(s) in \(selectedSource)."
+            statusLabel.stringValue = "Showing \(filteredRecords.count) skill(s) in \(selectedSource)."
         }
     }
 
@@ -233,15 +228,15 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
 
             if searchQuery.isEmpty {
                 if selectedSource == "All Sources" {
-                    emptyTitle = "No installed skills"
+                    emptyTitle = "No skills found"
                     emptyMessage = "Nothing was found in `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills`, or `~/.gemini/antigravity/skills`."
                 } else {
                     emptyTitle = "No \(selectedSource) skills"
                     emptyMessage = "Nothing was found for the \(selectedSource) source with the current filter."
                 }
             } else {
-                emptyTitle = "No matching installed skills"
-                emptyMessage = "No installed skills matched `\(searchQuery)` inside \(selectedSource)."
+                emptyTitle = "No matching skills"
+                emptyMessage = "No skills matched `\(searchQuery)` inside \(selectedSource)."
             }
 
             addFullWidthArrangedSubview(

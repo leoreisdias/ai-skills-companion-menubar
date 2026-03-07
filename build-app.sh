@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="myAgentSkills"
-DISPLAY_NAME="myAgentSkills"
+DISPLAY_NAME="My Agent Skills"
 BUILD_DIR=".build/release"
 APP_DIR="$DISPLAY_NAME.app"
 

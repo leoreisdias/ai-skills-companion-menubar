@@ -23,9 +23,6 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
         view = NSView()
         view.translatesAutoresizingMaskIntoConstraints = false
 
-        let titleLabel = NSTextField(labelWithString: "Skills in ~/.agents/skills")
-        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
-
         let descriptionLabel = makeBodyLabel("Browse every skill under `~/.agents/skills`, and search by name plus description so you can find the right skill faster.")
         descriptionLabel.textColor = .secondaryLabelColor
 
@@ -53,7 +50,7 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
             rowsStack.bottomAnchor.constraint(equalTo: rowsColumn.contentView.bottomAnchor, constant: -12)
         ])
 
-        let stack = NSStackView(views: [titleLabel, descriptionLabel, controls, statusLabel, scrollView])
+        let stack = NSStackView(views: [descriptionLabel, controls, statusLabel, scrollView])
         stack.orientation = .vertical
         stack.spacing = 12
         stack.alignment = .width
