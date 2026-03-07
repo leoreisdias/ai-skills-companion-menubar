@@ -180,6 +180,8 @@ func makeSectionContainer(title: String, subtitle: String? = nil) -> (container:
 final class EmptyStateView: NSView {
     init(title: String, message: String) {
         super.init(frame: .zero)
+        setContentHuggingPriority(.defaultLow, for: .horizontal)
+        setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         wantsLayer = true
         layer?.cornerRadius = 12
         layer?.borderWidth = 1
@@ -196,11 +198,12 @@ final class EmptyStateView: NSView {
         let stack = NSStackView(views: [titleLabel, messageLabel])
         stack.orientation = .vertical
         stack.spacing = 8
-        stack.alignment = .leading
+        stack.alignment = .width
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(stack)
         NSLayoutConstraint.activate([
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 112),
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 16),

@@ -5,11 +5,19 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
     private let cliService: SkillsCLIService
     private let catalogService: InstalledSkillsCatalogService
     private let searchField = NSSearchField()
+    private let sourceFilterPopUp = NSPopUpButton()
     private let rowsStack = NSStackView()
     private let statusLabel = makeSecondaryLabel("")
     private let outputComponents = makeCommandOutputView()
     private var allRecords: [InstalledSkillRecord] = []
     private var filteredRecords: [InstalledSkillRecord] = []
+    private let sourceFilterTitles = [
+        "All Sources",
+        "Global",
+        "Claude",
+        "Codex",
+        "Anti-Gravity"
+    ]
 
     init(cliService: SkillsCLIService, catalogService: InstalledSkillsCatalogService) {
         self.cliService = cliService
@@ -28,21 +36,28 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
 
         let titleLabel = NSTextField(labelWithString: "Installed official skills")
         titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
+        titleLabel.alignment = .left
 
         let descriptionLabel = makeBodyLabel("Browse the global skill folders you care about most: `~/.agents/skills`, Codex, Claude, and Gemini / Antigravity.")
         descriptionLabel.textColor = .secondaryLabelColor
+        descriptionLabel.alignment = .left
 
         searchField.placeholderString = "Filter installed skills"
         searchField.delegate = self
+        sourceFilterTitles.forEach { sourceFilterPopUp.addItem(withTitle: $0) }
+        sourceFilterPopUp.selectItem(at: 0)
+        sourceFilterPopUp.target = self
+        sourceFilterPopUp.action = #selector(sourceFilterChanged)
 
         let refreshButton = makeActionButton("Refresh", target: self, action: #selector(refresh))
         let checkButton = makeActionButton("Check Updates", target: self, action: #selector(checkUpdates))
         let updateButton = makeActionButton("Update All", target: self, action: #selector(updateAll))
 
-        let controls = NSStackView(views: [searchField, refreshButton, checkButton, updateButton])
+        let controls = NSStackView(views: [searchField, sourceFilterPopUp, refreshButton, checkButton, updateButton])
         controls.orientation = .horizontal
         controls.spacing = 8
         controls.alignment = .centerY
+        controls.distribution = .fill
 
         let rowsColumn = makeScrollableColumn(minHeight: 320)
         let scrollView = rowsColumn.scrollView
@@ -58,26 +73,28 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
             rowsStack.bottomAnchor.constraint(equalTo: rowsColumn.contentView.bottomAnchor, constant: -12)
         ])
 
-        let stack = NSStackView(views: [
-            titleLabel,
-            descriptionLabel,
-            controls,
-            statusLabel,
-            scrollView,
-            makeSectionLabel("Command Output"),
-            outputComponents.container
-        ])
-        stack.orientation = .vertical
-        stack.spacing = 12
-        stack.alignment = .width
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        statusLabel.alignment = .left
 
-        view.addSubview(stack)
+        let content = NSStackView()
+        content.orientation = .vertical
+        content.spacing = 12
+        content.alignment = .width
+        content.translatesAutoresizingMaskIntoConstraints = false
+
+        addFullWidthArrangedSubview(titleLabel, to: content)
+        addFullWidthArrangedSubview(descriptionLabel, to: content)
+        addFullWidthArrangedSubview(controls, to: content)
+        addFullWidthArrangedSubview(statusLabel, to: content)
+        addFullWidthArrangedSubview(scrollView, to: content)
+        addFullWidthArrangedSubview(makeSectionLabel("Command Output"), to: content)
+        addFullWidthArrangedSubview(outputComponents.container, to: content)
+
+        view.addSubview(content)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            stack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20),
+            content.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            content.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            content.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
+            content.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20),
             searchField.widthAnchor.constraint(greaterThanOrEqualToConstant: 240)
         ])
 
@@ -91,11 +108,6 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
     func reloadContent() {
         allRecords = catalogService.loadSkills()
         applyFilter()
-        if allRecords.isEmpty {
-            statusLabel.stringValue = "No skills were found in the configured global folders."
-        } else {
-            statusLabel.stringValue = "Loaded \(filteredRecords.count) installed skill(s) across your global folders."
-        }
     }
 
     @objc private func refresh() {
@@ -142,9 +154,65 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
         }
     }
 
+    @objc private func sourceFilterChanged() {
+        applyFilter()
+    }
+
     private func applyFilter() {
-        filteredRecords = catalogService.filter(skills: allRecords, query: searchField.stringValue)
+        let sourceFilteredRecords = recordsMatchingSelectedSource(allRecords)
+        filteredRecords = catalogService.filter(skills: sourceFilteredRecords, query: searchField.stringValue)
+        updateStatusLabel()
         renderRows()
+    }
+
+    private func updateStatusLabel() {
+        let selectedSource = selectedSourceTitle()
+        let searchQuery = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if allRecords.isEmpty {
+            statusLabel.stringValue = "No skills were found in the configured global folders."
+            return
+        }
+
+        if filteredRecords.isEmpty {
+            if selectedSource == "All Sources" && searchQuery.isEmpty {
+                statusLabel.stringValue = "No installed skills were found."
+            } else if searchQuery.isEmpty {
+                statusLabel.stringValue = "No installed skills were found for \(selectedSource)."
+            } else {
+                statusLabel.stringValue = "No installed skills matched `\(searchQuery)` in \(selectedSource)."
+            }
+            return
+        }
+
+        if selectedSource == "All Sources" {
+            statusLabel.stringValue = "Showing \(filteredRecords.count) installed skill(s) across your global folders."
+        } else {
+            statusLabel.stringValue = "Showing \(filteredRecords.count) installed skill(s) in \(selectedSource)."
+        }
+    }
+
+    private func recordsMatchingSelectedSource(_ records: [InstalledSkillRecord]) -> [InstalledSkillRecord] {
+        guard let selectedTitle = sourceFilterPopUp.selectedItem?.title else {
+            return records
+        }
+
+        switch selectedTitle {
+        case "Global":
+            return records.filter { $0.bucket.title == "Global Library" }
+        case "Claude":
+            return records.filter { $0.bucket.title == "Claude" }
+        case "Codex":
+            return records.filter { $0.bucket.title == "Codex" }
+        case "Anti-Gravity":
+            return records.filter { $0.bucket.title == "Gemini / Antigravity" }
+        default:
+            return records
+        }
+    }
+
+    private func selectedSourceTitle() -> String {
+        sourceFilterPopUp.selectedItem?.title ?? "All Sources"
     }
 
     private func renderRows() {
@@ -154,10 +222,28 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
         }
 
         guard !filteredRecords.isEmpty else {
+            let selectedSource = selectedSourceTitle()
+            let searchQuery = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let emptyTitle: String
+            let emptyMessage: String
+
+            if searchQuery.isEmpty {
+                if selectedSource == "All Sources" {
+                    emptyTitle = "No installed skills"
+                    emptyMessage = "Nothing was found in `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills`, or `~/.gemini/antigravity/skills`."
+                } else {
+                    emptyTitle = "No \(selectedSource) skills"
+                    emptyMessage = "Nothing was found for the \(selectedSource) source with the current filter."
+                }
+            } else {
+                emptyTitle = "No matching installed skills"
+                emptyMessage = "No installed skills matched `\(searchQuery)` inside \(selectedSource)."
+            }
+
             addFullWidthArrangedSubview(
                 EmptyStateView(
-                    title: "No installed skills",
-                    message: "Nothing was found in `~/.agents/skills`, `~/.codex/skills`, `~/.claude/skills`, or `~/.gemini/antigravity/skills`."
+                    title: emptyTitle,
+                    message: emptyMessage
                 ),
                 to: rowsStack
             )
