@@ -46,6 +46,11 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
 
         let resultsColumn = makeScrollableColumn(minHeight: 320)
         let resultsScroll = resultsColumn.scrollView
+        let commandOutputSection = CollapsibleSectionView(
+            title: "Command Output",
+            contentView: outputComponents.container,
+            startsExpanded: false
+        )
         resultsStack.orientation = .vertical
         resultsStack.spacing = 12
         resultsStack.alignment = .width
@@ -71,8 +76,7 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
         addFullWidthArrangedSubview(controls, to: content)
         addFullWidthArrangedSubview(statusLabel, to: content)
         addFullWidthArrangedSubview(resultsScroll, to: content)
-        addFullWidthArrangedSubview(makeSectionLabel("Command Output"), to: content)
-        addFullWidthArrangedSubview(outputComponents.container, to: content)
+        addFullWidthArrangedSubview(commandOutputSection, to: content)
 
         view.addSubview(content)
         NSLayoutConstraint.activate([

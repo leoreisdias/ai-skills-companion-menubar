@@ -4,6 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
+    private let statusMenu = NSMenu()
     private lazy var popoverEventMonitor = PopoverEventMonitor { [weak self] event in
         self?.handlePopoverEvent(event)
     }
@@ -18,9 +19,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "myAgentSkills")
             button.image?.isTemplate = true
             button.target = self
-            button.action = #selector(togglePopover(_:))
+            button.action = #selector(handleStatusItemClick(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.toolTip = "myAgentSkills"
         }
+
+        let quitItem = NSMenuItem(title: "Quit myAgentSkills", action: #selector(quitApp), keyEquivalent: "q")
+        quitItem.target = self
+        statusMenu.addItem(quitItem)
 
         popover.behavior = .transient
         popover.contentSize = NSSize(width: 940, height: 720)
@@ -33,6 +39,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidResignActive(_ notification: Notification) {
         closePopover(nil)
+    }
+
+    @objc private func handleStatusItemClick(_ sender: Any?) {
+        if let event = NSApp.currentEvent, event.type == .rightMouseUp {
+            closePopover(sender)
+            statusItem.menu = statusMenu
+            statusItem.popUpMenu(statusMenu)
+            statusItem.menu = nil
+            return
+        }
+
+        togglePopover(sender)
     }
 
     @objc private func togglePopover(_ sender: Any?) {
@@ -72,5 +90,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         closePopover(nil)
+    }
+
+    @objc private func quitApp() {
+        NSApp.terminate(nil)
     }
 }

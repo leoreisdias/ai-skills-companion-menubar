@@ -57,6 +57,78 @@ func makeCommandOutputView() -> (container: NSScrollView, textView: NSTextView) 
 }
 
 @MainActor
+final class CollapsibleSectionView: NSView {
+    private let title: String
+    private let toggleButton: NSButton
+    private let contentContainer = NSView()
+    private let contentView: NSView
+    private(set) var isExpanded: Bool
+
+    init(title: String, contentView: NSView, startsExpanded: Bool = false) {
+        self.title = title
+        self.contentView = contentView
+        self.isExpanded = startsExpanded
+        self.toggleButton = NSButton(title: "", target: nil, action: nil)
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        toggleButton.target = self
+        toggleButton.action = #selector(toggleExpanded)
+        toggleButton.isBordered = false
+        toggleButton.alignment = .left
+        toggleButton.imagePosition = .imageLeading
+        toggleButton.font = .systemFont(ofSize: 13, weight: .semibold)
+        toggleButton.contentTintColor = .labelColor
+        toggleButton.setButtonType(.momentaryPushIn)
+        toggleButton.translatesAutoresizingMaskIntoConstraints = false
+
+        contentContainer.translatesAutoresizingMaskIntoConstraints = false
+        contentContainer.addSubview(contentView)
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        let stack = NSStackView(views: [toggleButton, contentContainer])
+        stack.orientation = .vertical
+        stack.spacing = 8
+        stack.alignment = .width
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            contentView.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+            contentView.topAnchor.constraint(equalTo: contentContainer.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor)
+        ])
+
+        updateExpandedState()
+    }
+
+    @objc private func toggleExpanded() {
+        isExpanded.toggle()
+        updateExpandedState()
+    }
+
+    private func updateExpandedState() {
+        contentContainer.isHidden = !isExpanded
+        toggleButton.title = isExpanded ? "Hide \(title)" : "Show \(title)"
+        toggleButton.image = NSImage(
+            systemSymbolName: isExpanded ? "chevron.down" : "chevron.right",
+            accessibilityDescription: title
+        )
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+@MainActor
 func copyToPasteboard(_ value: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(value, forType: .string)
