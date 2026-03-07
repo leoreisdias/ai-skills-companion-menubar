@@ -265,6 +265,7 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
         for bucket in orderedBuckets {
             let section = makeSectionContainer(title: bucket.title, subtitle: bucket.locationLabel)
             addFullWidthArrangedSubview(section.container, to: rowsStack)
+            var cards: [NSView] = []
 
             for (index, record) in grouped[bucket, default: []] {
                 let copyButton = makeActionButton("Copy Name", target: self, action: #selector(copySkillName(_:)))
@@ -276,17 +277,17 @@ final class InstalledTabViewController: NSViewController, NSSearchFieldDelegate 
                 folderButton.tag = index
                 folderButton.isEnabled = record.folderURL != nil
 
-                addFullWidthArrangedSubview(
+                cards.append(
                     SkillRowBox(
                         title: record.name,
-                        subtitle: "\(record.sourceLabel) • \(record.status.title)",
+                        subtitle: "",
                         body: record.description,
                         actionButtons: [copyButton, fileButton, folderButton]
-                    ),
-                    to: section.contentStack
+                    )
                 )
             }
 
+            addCardGridRows(cards, to: section.contentStack)
         }
     }
 }

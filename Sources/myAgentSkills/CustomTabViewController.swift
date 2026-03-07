@@ -122,6 +122,8 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
             return
         }
 
+        var cards: [NSView] = []
+
         for (index, skill) in filteredSkills.enumerated() {
             let copyButton = makeActionButton("Copy Name", target: self, action: #selector(copySkillName(_:)))
             copyButton.tag = index
@@ -130,15 +132,16 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
             let folderButton = makeActionButton("Open Folder", target: self, action: #selector(openSkillFolder(_:)))
             folderButton.tag = index
 
-            addFullWidthArrangedSubview(
+            cards.append(
                 SkillRowBox(
                     title: skill.name,
-                    subtitle: "Local Skill",
+                    subtitle: "",
                     body: skill.description,
                     actionButtons: [copyButton, fileButton, folderButton]
-                ),
-                to: rowsStack
+                )
             )
         }
+
+        addCardGridRows(cards, to: rowsStack)
     }
 }

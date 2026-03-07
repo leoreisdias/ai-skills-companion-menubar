@@ -34,6 +34,19 @@ func makeSecondaryLabel(_ text: String) -> NSTextField {
 func makeActionButton(_ title: String, target: AnyObject?, action: Selector) -> NSButton {
     let button = NSButton(title: title, target: target, action: action)
     button.bezelStyle = .rounded
+    button.controlSize = .small
+    return button
+}
+
+@MainActor
+func makeLinkButton(_ title: String, target: AnyObject?, action: Selector?) -> NSButton {
+    let button = NSButton(title: title, target: target, action: action)
+    button.isBordered = false
+    button.bezelStyle = .inline
+    button.controlSize = .small
+    button.font = .systemFont(ofSize: 12, weight: .semibold)
+    button.contentTintColor = .linkColor
+    button.setButtonType(.momentaryPushIn)
     return button
 }
 
@@ -136,7 +149,19 @@ func copyToPasteboard(_ value: String) {
 
 @MainActor
 final class SkillRowBox: NSView {
+    private let bodyLabel: NSTextField
+    private let toggleButton: NSButton
+    private let fullBody: String
+    private let collapsedBody: String
+    private let isExpandable: Bool
+    private var isExpanded = false
+
     init(title: String, subtitle: String, body: String, actionButtons: [NSButton]) {
+        self.fullBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.collapsedBody = SkillRowBox.truncatedBody(for: self.fullBody)
+        self.isExpandable = self.collapsedBody != self.fullBody
+        self.bodyLabel = makeBodyLabel(self.collapsedBody)
+        self.toggleButton = makeLinkButton("View more", target: nil, action: nil)
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -149,21 +174,53 @@ final class SkillRowBox: NSView {
 
         let titleLabel = NSTextField(labelWithString: title)
         titleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        titleLabel.maximumNumberOfLines = 1
         titleLabel.lineBreakMode = .byTruncatingTail
 
         let subtitleLabel = makeSecondaryLabel(subtitle)
-        let bodyLabel = makeBodyLabel(body)
+        subtitleLabel.lineBreakMode = .byTruncatingTail
+        subtitleLabel.maximumNumberOfLines = 1
+        subtitleLabel.isHidden = subtitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         bodyLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        bodyLabel.textColor = .labelColor
+
+        actionButtons.forEach {
+            $0.setContentCompressionResistancePriority(.required, for: .horizontal)
+            $0.setContentHuggingPriority(.required, for: .horizontal)
+        }
 
         let buttonRow = NSStackView(views: actionButtons)
         buttonRow.orientation = .horizontal
-        buttonRow.spacing = 8
-        buttonRow.alignment = .leading
+        buttonRow.spacing = 6
+        buttonRow.alignment = .centerY
+        buttonRow.setContentCompressionResistancePriority(.required, for: .horizontal)
+        buttonRow.setContentHuggingPriority(.required, for: .horizontal)
 
-        let stack = NSStackView(views: [titleLabel, subtitleLabel, bodyLabel, buttonRow])
+        let spacer = NSView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        toggleButton.target = self
+        toggleButton.action = #selector(toggleDescription)
+        toggleButton.isHidden = !isExpandable
+        toggleButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        toggleButton.setContentHuggingPriority(.required, for: .horizontal)
+
+        let bottomRow = NSStackView()
+        bottomRow.orientation = .horizontal
+        bottomRow.spacing = 8
+        bottomRow.alignment = .centerY
+        if isExpandable {
+            bottomRow.addArrangedSubview(toggleButton)
+        }
+        bottomRow.addArrangedSubview(spacer)
+        bottomRow.addArrangedSubview(buttonRow)
+
+        let stack = NSStackView(views: [titleLabel, subtitleLabel, bodyLabel, bottomRow])
         stack.orientation = .vertical
-        stack.spacing = 8
-        stack.alignment = .leading
+        stack.spacing = 6
+        stack.alignment = .width
         stack.translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(stack)
@@ -174,11 +231,60 @@ final class SkillRowBox: NSView {
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 14),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14)
         ])
+
+        updateDescriptionState()
+    }
+
+    @objc private func toggleDescription() {
+        guard isExpandable else { return }
+        isExpanded.toggle()
+        updateDescriptionState()
+    }
+
+    private func updateDescriptionState() {
+        bodyLabel.stringValue = isExpanded ? fullBody : collapsedBody
+        toggleButton.title = isExpanded ? "Show less" : "View more"
+    }
+
+    private static func truncatedBody(for value: String, limit: Int = 180) -> String {
+        guard value.count > limit else { return value }
+        let cutoffIndex = value.index(value.startIndex, offsetBy: limit)
+        let prefix = String(value[..<cutoffIndex])
+        let trimmed = prefix.replacingOccurrences(of: "\\s+\\S*$", with: "", options: .regularExpression)
+        return trimmed.isEmpty ? prefix + "..." : trimmed + "..."
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+}
+
+@MainActor
+func addCardGridRows(_ cards: [NSView], to stackView: NSStackView, columns: Int = 2) {
+    guard !cards.isEmpty else { return }
+
+    for startIndex in stride(from: 0, to: cards.count, by: columns) {
+        let endIndex = min(startIndex + columns, cards.count)
+        let rowViews = Array(cards[startIndex..<endIndex])
+
+        let rowStack = NSStackView()
+        rowStack.orientation = .horizontal
+        rowStack.spacing = 12
+        rowStack.alignment = .top
+        rowStack.distribution = .fillEqually
+
+        for card in rowViews {
+            rowStack.addArrangedSubview(card)
+        }
+
+        while rowStack.arrangedSubviews.count < columns {
+            let filler = NSView()
+            filler.translatesAutoresizingMaskIntoConstraints = false
+            rowStack.addArrangedSubview(filler)
+        }
+
+        addFullWidthArrangedSubview(rowStack, to: stackView)
     }
 }
 

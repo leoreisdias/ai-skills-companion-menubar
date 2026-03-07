@@ -179,6 +179,8 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
             return
         }
 
+        var cards: [NSView] = []
+
         for (index, result) in results.enumerated() {
             let installButton = makeActionButton("Install In CLI", target: self, action: #selector(installResultInTerminal(_:)))
             installButton.tag = index
@@ -186,16 +188,17 @@ final class OfficialTabViewController: NSViewController, NSSearchFieldDelegate {
             copyButton.tag = index
 
             let subtitle = result.source.map { "\($0) • Official result" } ?? "Official result"
-            addFullWidthArrangedSubview(
+            cards.append(
                 SkillRowBox(
                     title: result.title,
                     subtitle: subtitle,
                     body: result.description,
                     actionButtons: [installButton, copyButton]
-                ),
-                to: resultsStack
+                )
             )
         }
+
+        addCardGridRows(cards, to: resultsStack)
     }
 
     private func resolverMessage() -> String {
