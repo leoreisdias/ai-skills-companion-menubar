@@ -51,6 +51,32 @@ func makeActionButton(_ title: String, target: AnyObject?, action: Selector) -> 
 }
 
 @MainActor
+func makeFilterChipButton(_ title: String, target: AnyObject?, action: Selector, isSelected: Bool) -> NSButton {
+    let button = NSButton(title: title, target: target, action: action)
+    button.bezelStyle = .rounded
+    button.controlSize = .regular
+    button.isBordered = true
+    button.translatesAutoresizingMaskIntoConstraints = false
+    button.setContentHuggingPriority(.required, for: .horizontal)
+    button.setContentCompressionResistancePriority(.required, for: .horizontal)
+    button.font = .systemFont(ofSize: 13, weight: .semibold)
+    button.setButtonType(.momentaryPushIn)
+    button.imagePosition = .noImage
+    button.bezelColor = isSelected
+        ? .controlAccentColor
+        : NSColor.quaternaryLabelColor.withAlphaComponent(0.14)
+    button.attributedTitle = NSAttributedString(
+        string: title,
+        attributes: [
+            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+            .foregroundColor: isSelected ? NSColor.white : NSColor.labelColor
+        ]
+    )
+
+    return button
+}
+
+@MainActor
 func makeLinkButton(_ title: String, target: AnyObject?, action: Selector?) -> NSButton {
     let button = NSButton(title: title, target: target, action: action)
     button.isBordered = false
@@ -304,13 +330,14 @@ func addCardGridRows(_ cards: [NSView], to stackView: NSStackView, columns: Int 
 }
 
 @MainActor
-func makeScrollableColumn(minHeight: CGFloat) -> (scrollView: NSScrollView, contentView: FlippedContentView) {
+func makeScrollableColumn(minHeight: CGFloat, scrollView: NSScrollView = NSScrollView()) -> (scrollView: NSScrollView, contentView: FlippedContentView) {
     let contentView = FlippedContentView()
     contentView.translatesAutoresizingMaskIntoConstraints = false
 
-    let scrollView = NSScrollView()
     scrollView.borderType = .bezelBorder
     scrollView.hasVerticalScroller = true
+    scrollView.hasHorizontalScroller = false
+    scrollView.horizontalScrollElasticity = .none
     scrollView.drawsBackground = false
     scrollView.documentView = contentView
     scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -327,7 +354,10 @@ func makeScrollableColumn(minHeight: CGFloat) -> (scrollView: NSScrollView, cont
 func addFullWidthArrangedSubview(_ view: NSView, to stackView: NSStackView) {
     stackView.addArrangedSubview(view)
     view.translatesAutoresizingMaskIntoConstraints = false
-    view.widthAnchor.constraint(equalTo: stackView.widthAnchor).isActive = true
+    NSLayoutConstraint.activate([
+        view.leadingAnchor.constraint(equalTo: stackView.leadingAnchor),
+        view.trailingAnchor.constraint(equalTo: stackView.trailingAnchor)
+    ])
 }
 
 @MainActor
@@ -384,15 +414,11 @@ func makeCategorySectionContainer(
     container.layer?.borderColor = NSColor.separatorColor.cgColor
     container.layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.45).cgColor
 
-    let headerContainer = NSView()
-    headerContainer.translatesAutoresizingMaskIntoConstraints = false
-    headerContainer.wantsLayer = true
-    headerContainer.layer?.cornerRadius = 12
-    headerContainer.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.82).cgColor
-
     let titleLabel = NSTextField(labelWithString: title)
     titleLabel.font = .systemFont(ofSize: 18, weight: .bold)
     titleLabel.alignment = .left
+    titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+    titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     let titleRow = NSStackView()
     titleRow.orientation = .horizontal
@@ -419,22 +445,24 @@ func makeCategorySectionContainer(
         titleRow.addArrangedSubview(badgeContainer)
     }
 
-    titleRow.addArrangedSubview(NSView())
+    let titleSpacer = NSView()
+    titleSpacer.translatesAutoresizingMaskIntoConstraints = false
+    titleSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    titleSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    titleRow.addArrangedSubview(titleSpacer)
 
-    let headerViews: [NSView]
+    let headerStack = NSStackView()
+    headerStack.orientation = .vertical
+    headerStack.spacing = 8
+    headerStack.alignment = .width
+    headerStack.translatesAutoresizingMaskIntoConstraints = false
+    addFullWidthArrangedSubview(titleRow, to: headerStack)
+
     if let subtitle, !subtitle.isEmpty {
         let subtitleLabel = makeBodyLabel(subtitle)
         subtitleLabel.textColor = .secondaryLabelColor
-        headerViews = [titleRow, subtitleLabel]
-    } else {
-        headerViews = [titleRow]
+        addFullWidthArrangedSubview(subtitleLabel, to: headerStack)
     }
-
-    let headerStack = NSStackView(views: headerViews)
-    headerStack.orientation = .vertical
-    headerStack.spacing = 6
-    headerStack.alignment = .width
-    headerStack.translatesAutoresizingMaskIntoConstraints = false
 
     let contentStack = NSStackView()
     contentStack.orientation = .vertical
@@ -446,25 +474,22 @@ func makeCategorySectionContainer(
     separator.boxType = .separator
     separator.translatesAutoresizingMaskIntoConstraints = false
 
-    let wrapper = NSStackView(views: [headerContainer, separator, contentStack])
+    let wrapper = NSStackView()
     wrapper.orientation = .vertical
     wrapper.spacing = 14
     wrapper.alignment = .width
     wrapper.translatesAutoresizingMaskIntoConstraints = false
 
     container.addSubview(wrapper)
-    headerContainer.addSubview(headerStack)
+    addFullWidthArrangedSubview(headerStack, to: wrapper)
+    addFullWidthArrangedSubview(separator, to: wrapper)
+    addFullWidthArrangedSubview(contentStack, to: wrapper)
 
     NSLayoutConstraint.activate([
         wrapper.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
         wrapper.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
         wrapper.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
-        wrapper.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16),
-
-        headerStack.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor, constant: 16),
-        headerStack.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor, constant: -16),
-        headerStack.topAnchor.constraint(equalTo: headerContainer.topAnchor, constant: 14),
-        headerStack.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: -14)
+        wrapper.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16)
     ])
 
     return (container, contentStack)

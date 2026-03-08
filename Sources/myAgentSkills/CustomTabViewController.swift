@@ -2,14 +2,24 @@ import AppKit
 
 @MainActor
 final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
+    private struct CategoryFilterOption {
+        let id: String?
+        let title: String
+    }
+
     private let catalogService: CustomSkillsCatalogService
     private let searchField = NSSearchField()
     private let bannerContainer = NSView()
+    private let categoryFiltersContainer = NSView()
+    private let categoryFiltersStack = NSStackView()
+    private let rowsScrollView = NSScrollView()
     private let rowsStack = NSStackView()
     private let statusLabel = makeSecondaryLabel("")
     private var catalogSnapshot = CustomSkillsCatalogSnapshot(skills: [], categorizationState: .missing)
     private var allSkills: [CustomSkillRecord] = []
     private var filteredSkills: [CustomSkillRecord] = []
+    private var currentCategoryFilterOptions: [CategoryFilterOption] = []
+    private var selectedCategoryID: String?
 
     init(catalogService: CustomSkillsCatalogService) {
         self.catalogService = catalogService
@@ -27,6 +37,7 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
 
         let descriptionLabel = makeBodyLabel("Browse every skill under `~/.agents/skills`, and search by name plus description so you can find the right skill faster.")
         descriptionLabel.textColor = .secondaryLabelColor
+        descriptionLabel.alignment = .center
 
         searchField.placeholderString = "Search local skills by name or description"
         searchField.delegate = self
@@ -39,8 +50,43 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
         controls.alignment = .centerY
 
         bannerContainer.translatesAutoresizingMaskIntoConstraints = false
+        categoryFiltersContainer.translatesAutoresizingMaskIntoConstraints = false
 
-        let rowsColumn = makeScrollableColumn(minHeight: 420)
+        let categoryFiltersScrollView = NSScrollView()
+        categoryFiltersScrollView.borderType = .noBorder
+        categoryFiltersScrollView.hasHorizontalScroller = false
+        categoryFiltersScrollView.hasVerticalScroller = false
+        categoryFiltersScrollView.horizontalScrollElasticity = .allowed
+        categoryFiltersScrollView.scrollerStyle = .overlay
+        categoryFiltersScrollView.drawsBackground = false
+        categoryFiltersScrollView.translatesAutoresizingMaskIntoConstraints = false
+
+        let categoryFiltersContentView = FlippedContentView()
+        categoryFiltersContentView.translatesAutoresizingMaskIntoConstraints = false
+        categoryFiltersScrollView.documentView = categoryFiltersContentView
+
+        categoryFiltersStack.orientation = .horizontal
+        categoryFiltersStack.spacing = 8
+        categoryFiltersStack.alignment = .centerY
+        categoryFiltersStack.translatesAutoresizingMaskIntoConstraints = false
+        categoryFiltersContentView.addSubview(categoryFiltersStack)
+
+        categoryFiltersContainer.addSubview(categoryFiltersScrollView)
+        NSLayoutConstraint.activate([
+            categoryFiltersScrollView.leadingAnchor.constraint(equalTo: categoryFiltersContainer.leadingAnchor),
+            categoryFiltersScrollView.trailingAnchor.constraint(equalTo: categoryFiltersContainer.trailingAnchor),
+            categoryFiltersScrollView.topAnchor.constraint(equalTo: categoryFiltersContainer.topAnchor),
+            categoryFiltersScrollView.bottomAnchor.constraint(equalTo: categoryFiltersContainer.bottomAnchor),
+            categoryFiltersScrollView.heightAnchor.constraint(equalToConstant: 36),
+
+            categoryFiltersStack.leadingAnchor.constraint(equalTo: categoryFiltersContentView.leadingAnchor, constant: 4),
+            categoryFiltersStack.topAnchor.constraint(equalTo: categoryFiltersContentView.topAnchor),
+            categoryFiltersStack.bottomAnchor.constraint(equalTo: categoryFiltersContentView.bottomAnchor),
+            categoryFiltersStack.trailingAnchor.constraint(equalTo: categoryFiltersContentView.trailingAnchor, constant: -4),
+            categoryFiltersContentView.heightAnchor.constraint(equalTo: categoryFiltersScrollView.contentView.heightAnchor)
+        ])
+
+        let rowsColumn = makeScrollableColumn(minHeight: 420, scrollView: rowsScrollView)
         let scrollView = rowsColumn.scrollView
         rowsStack.orientation = .vertical
         rowsStack.spacing = 20
@@ -54,11 +100,25 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
             rowsStack.bottomAnchor.constraint(equalTo: rowsColumn.contentView.bottomAnchor, constant: -12)
         ])
 
-        let stack = NSStackView(views: [descriptionLabel, bannerContainer, controls, statusLabel, scrollView])
+        statusLabel.alignment = .right
+
+        let stack = NSStackView(views: [descriptionLabel, bannerContainer, controls, categoryFiltersContainer, statusLabel, scrollView])
         stack.orientation = .vertical
         stack.spacing = 12
         stack.alignment = .width
         stack.translatesAutoresizingMaskIntoConstraints = false
+
+        stack.arrangedSubviews.forEach {
+            stack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+
+        addFullWidthArrangedSubview(descriptionLabel, to: stack)
+        addFullWidthArrangedSubview(bannerContainer, to: stack)
+        addFullWidthArrangedSubview(controls, to: stack)
+        addFullWidthArrangedSubview(categoryFiltersContainer, to: stack)
+        addFullWidthArrangedSubview(statusLabel, to: stack)
+        addFullWidthArrangedSubview(scrollView, to: stack)
 
         view.addSubview(stack)
         NSLayoutConstraint.activate([
@@ -79,6 +139,7 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
     @objc private func refresh() {
         catalogSnapshot = catalogService.loadSnapshot()
         allSkills = catalogSnapshot.skills
+        ensureValidSelectedCategory()
         applyFilter()
     }
 
@@ -98,8 +159,10 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
     }
 
     private func applyFilter() {
-        filteredSkills = catalogService.filter(skills: allSkills, query: searchField.stringValue)
+        let categoryFilteredSkills = skillsMatchingSelectedCategory(allSkills)
+        filteredSkills = catalogService.filter(skills: categoryFilteredSkills, query: searchField.stringValue)
         renderBanner()
+        renderCategoryFilters()
         updateStatusLabel()
         renderRows()
     }
@@ -122,7 +185,12 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
                 skills: filteredSkills,
                 categorizationState: catalogSnapshot.categorizationState
             )
-            statusLabel.stringValue = "Showing \(filteredSkills.count) local skill(s) in \(visibleSections.count) categor\(visibleSections.count == 1 ? "y" : "ies")."
+            if let selectedCategoryID,
+               let selectedOption = categoryFilterOptions().first(where: { $0.id == selectedCategoryID }) {
+                statusLabel.stringValue = "Showing \(filteredSkills.count) local skill(s) in \(selectedOption.title)."
+            } else {
+                statusLabel.stringValue = "Showing \(filteredSkills.count) local skill(s) in \(visibleSections.count) categor\(visibleSections.count == 1 ? "y" : "ies")."
+            }
         case .missing, .invalid:
             statusLabel.stringValue = "Loaded \(filteredSkills.count) local skill(s)."
         }
@@ -168,6 +236,13 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
         ])
     }
 
+    @objc private func selectCategoryFilter(_ sender: NSButton) {
+        guard sender.tag >= 0, sender.tag < currentCategoryFilterOptions.count else { return }
+        selectedCategoryID = currentCategoryFilterOptions[sender.tag].id
+        applyFilter()
+        resetResultsScrollPosition()
+    }
+
     @objc private func showCategorizationHelp() {
         let alert = NSAlert()
         alert.messageText = "Categorize your skills"
@@ -191,6 +266,32 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         copyToPasteboard(SkillCatalogDefinition.templateJSON)
         statusLabel.stringValue = "Copied skills.json template to the clipboard."
+    }
+
+    private func renderCategoryFilters() {
+        categoryFiltersStack.arrangedSubviews.forEach {
+            categoryFiltersStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+
+        let options = categoryFilterOptions()
+        currentCategoryFilterOptions = options
+        guard options.count > 1 else {
+            categoryFiltersContainer.isHidden = true
+            return
+        }
+
+        categoryFiltersContainer.isHidden = false
+        for (index, option) in options.enumerated() {
+            let button = makeFilterChipButton(
+                option.title,
+                target: self,
+                action: #selector(selectCategoryFilter(_:)),
+                isSelected: selectedCategoryID == option.id
+            )
+            button.tag = index
+            categoryFiltersStack.addArrangedSubview(button)
+        }
     }
 
     private func renderRows() {
@@ -265,5 +366,44 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
             body: skill.description,
             actionButtons: [copyButton, fileButton, folderButton]
         )
+    }
+
+    private func skillsMatchingSelectedCategory(_ skills: [CustomSkillRecord]) -> [CustomSkillRecord] {
+        guard let selectedCategoryID else { return skills }
+        if selectedCategoryID == "uncategorized" {
+            return skills.filter { $0.categoryScopeID == nil }
+        }
+        return skills.filter { $0.categoryScopeID == selectedCategoryID }
+    }
+
+    private func resetResultsScrollPosition() {
+        view.layoutSubtreeIfNeeded()
+        rowsScrollView.contentView.scroll(to: .zero)
+        rowsScrollView.reflectScrolledClipView(rowsScrollView.contentView)
+    }
+
+    private func categoryFilterOptions() -> [CategoryFilterOption] {
+        guard case .loaded(let definition) = catalogSnapshot.categorizationState else {
+            return []
+        }
+
+        var options = [CategoryFilterOption(id: nil, title: "All Categories")]
+        options.append(contentsOf: definition.scopes.map { scope in
+            CategoryFilterOption(id: scope.id, title: scope.label)
+        })
+
+        if allSkills.contains(where: { $0.categoryScopeID == nil }) {
+            options.append(CategoryFilterOption(id: "uncategorized", title: "Uncategorized"))
+        }
+
+        return options
+    }
+
+    private func ensureValidSelectedCategory() {
+        let validCategoryIDs = Set(categoryFilterOptions().compactMap(\.id))
+        guard let selectedCategoryID else { return }
+        if !validCategoryIDs.contains(selectedCategoryID) {
+            self.selectedCategoryID = nil
+        }
     }
 }
