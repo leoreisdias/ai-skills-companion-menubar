@@ -334,7 +334,7 @@ func makeScrollableColumn(minHeight: CGFloat, scrollView: NSScrollView = NSScrol
     let contentView = FlippedContentView()
     contentView.translatesAutoresizingMaskIntoConstraints = false
 
-    scrollView.borderType = .bezelBorder
+    scrollView.borderType = .noBorder
     scrollView.hasVerticalScroller = true
     scrollView.hasHorizontalScroller = false
     scrollView.horizontalScrollElasticity = .none
