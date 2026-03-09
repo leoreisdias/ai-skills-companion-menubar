@@ -28,9 +28,9 @@ AI Skills Companion gives you:
 
 - macOS
 - Swift / Xcode Command Line Tools for building the app
-- Node.js with `npx` available if you want the `Official` and `Per Agent` CLI-backed features
+- Node.js with `npx` available if you want the `Hub` and `Per Agent` CLI-backed features
 - `skills.sh` available through `npx skills ...`
-- Codex CLI available if you want to use `Auto Categorize` in the `Skills` tab
+- Codex CLI available if you want to use `Auto Categorize` in the `Global` tab
 
 ### Build
 
@@ -133,7 +133,7 @@ The `Per Agent` tab also exposes:
 
 `Update All` runs `npx skills update`.
 
-Like the `Official` tab, this tab also includes a collapsible `Command Output` section.
+Like the `Hub` tab, this tab also includes a collapsible `Command Output` section.
 
 ## Global Tab
 
@@ -158,7 +158,7 @@ This tab is where the app becomes more than a CLI wrapper. It helps you browse, 
 
 ## Local Skill Management
 
-The `Skills` tab now supports real file-based management.
+The `Global` tab now supports real file-based management.
 
 ### Disable a skill
 
@@ -200,7 +200,7 @@ This is not an immediate permanent delete from inside the app.
 
 Disabled skills:
 
-- stay visible in the `Skills` tab
+- stay visible in the `Global` tab
 - remain searchable
 - remain categorized if `skills.json` maps them
 - appear dimmed
@@ -218,7 +218,7 @@ If this file exists:
 ~/.agents/skills/skills.json
 ```
 
-the `Skills` tab uses it to organize your local skills into categories.
+the `Global` tab uses it to organize your local skills into categories.
 
 ### What the app reads from `skills.json`
 
@@ -238,7 +238,7 @@ Skills are matched by folder name, not by display name.
 
 When `skills.json` loads successfully:
 
-- the `Skills` tab groups skills by category
+- the `Global` tab groups skills by category
 - categories follow the order defined in `scopes`
 - category chips appear under the search field
 - search still works across name and description
@@ -274,7 +274,7 @@ If you do not have a `skills.json` yet, the app can open a helper modal with:
 
 ### Auto Categorize with Codex
 
-If Codex CLI is installed, the `Skills` tab can ask Codex to create or update:
+If Codex CLI is installed, the `Global` tab can ask Codex to create or update:
 
 ```bash
 ~/.agents/skills/skills.json
@@ -295,14 +295,14 @@ When you run `Auto Categorize`, the app:
 - allows Codex to create a new scope only if existing scopes are clearly a poor fit
 - includes both active and disabled skills in the categorization pass
 
-Before the run starts, the `Skills` tab keeps the confirmation inside the popover instead of opening a separate system alert. That way, the user can stay in context and immediately inspect the run feedback in the same screen.
+Before the run starts, the `Global` tab keeps the confirmation inside the popover instead of opening a separate system alert. That way, the user can stay in context and immediately inspect the run feedback in the same screen.
 
 That confirmation step also includes an optional custom-instruction field for one-off guidance such as:
 
 - `Keep Stitch skills together, but leave shadcn-ui inside Frontend.`
 - `Put all of my ShadCN skills in a dedicated group.`
 
-The `Skills` tab also includes a collapsible `Auto Categorize Output` section. It expands during a run and streams Codex output live so the app does not feel frozen while categorization is in progress.
+The `Global` tab also includes a collapsible `Auto Categorize Output` section. It expands during a run and streams Codex output live so the app does not feel frozen while categorization is in progress.
 
 ## Local File Layout
 
@@ -334,20 +334,20 @@ Important design choices:
 - menu bar first
 - command output hidden behind accordions unless needed
 - real `skills.sh` install flow preserved instead of cloned
-- local `Skills` tab separated from CLI-backed views
+- local `Global` tab separated from CLI-backed views
 
 ## Current Limitations
 
 - The app does not embed a terminal emulator.
-- Official installs still rely on the real `skills.sh` CLI flow, but the app now copies the command instead of opening a terminal for you.
+- Hub installs still rely on the real `skills.sh` CLI flow, but the app now copies the command instead of opening a terminal for you.
 - The `Per Agent` tab is inspection and update oriented, not local file management oriented.
-- Category grouping currently applies only to the `Skills` tab.
+- Category grouping currently applies only to the `Global` tab.
 - `Auto Categorize` depends on the local Codex CLI being installed and available to GUI apps.
 - The app expects the local Swift toolchain and SDK to be aligned for successful builds.
 
 ## Troubleshooting
 
-### Official search or install is unavailable
+### Hub search or install is unavailable
 
 This usually means GUI-launched apps cannot resolve `npx`.
 
@@ -365,7 +365,7 @@ The most likely reason is a folder name conflict in `~/.agents/skills`.
 
 This usually means the app could not find `codex`, or the Codex run could not write a valid `skills.json`.
 
-Open the `Auto Categorize Output` section in the `Skills` tab to inspect the command, stdout, stderr, and exit code.
+Open the `Auto Categorize Output` section in the `Global` tab to inspect the command, stdout, stderr, and exit code.
 
 ### `swift test` fails in this environment
 
@@ -384,7 +384,7 @@ swift test
 The packaged app is generated as:
 
 ```bash
-My Agent Skills.app
+AI Skills Companion.app
 ```
 
 ## Screenshots
@@ -395,46 +395,35 @@ Use this section for product prints and visual walkthroughs.
 
 Add your menu bar icon / popover overview screenshot here.
 
-```md
 ![Menu Bar Overview](docs/screenshots/menu-bar-overview.png)
-```
 
-### Official Tab
 
-Add an official catalog search screenshot here.
+### Hub Tab
 
-```md
-![Official Tab](docs/screenshots/official-tab.png)
-```
+Add a Hub catalog search screenshot here.
+
+![Hub Tab](docs/screenshots/official-tab.png)
 
 ### Per Agent Tab
 
 Add an installed-per-agent screenshot here.
 
-```md
 ![Per Agent Tab](docs/screenshots/per-agent-tab.png)
-```
 
-### Skills Tab
+### Global Tab
 
-Add a categorized local skills screenshot here.
+Add a categorized global skills screenshot here.
 
-```md
 ![Skills Tab](docs/screenshots/skills-tab.png)
-```
 
 ### Categorization Banner / Auto Categorize
 
 Add the categorization banner, modal, or Codex output screenshot here.
 
-```md
 ![Auto Categorize](docs/screenshots/auto-categorize.png)
-```
 
 ### Categorization Banner / Modal
 
 Add the categorization onboarding banner or JSON template modal here.
 
-```md
 ![Categorization Help](docs/screenshots/categorization-help.png)
-```
