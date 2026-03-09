@@ -45,6 +45,16 @@ swift build
 open "AI Skills Companion.app"
 ```
 
+### Install in Applications
+
+If you want the app to appear in Spotlight, Raycast, Launchpad, and the normal macOS Applications list, copy the built app into `/Applications`:
+
+```bash
+cp -r "AI Skills Companion.app" /Applications/
+```
+
+After that, you can launch it like any other Mac app without needing to open it from the project folder each time.
+
 ### Menu Bar Behavior
 
 - Left click the menu bar icon to open or close the app popover.
@@ -385,6 +395,12 @@ The packaged app is generated as:
 
 ```bash
 AI Skills Companion.app
+```
+
+To install that build into `/Applications`:
+
+```bash
+cp -r "AI Skills Companion.app" /Applications/
 ```
 
 ## Screenshots
