@@ -62,6 +62,7 @@ final class myAgentSkillsTests: XCTestCase {
         let skills = [
             CustomSkillRecord(
                 name: "frontend-design",
+                originalName: "frontend-design",
                 description: "Create distinctive production-grade interfaces",
                 folderName: "frontend-design",
                 folderURL: URL(fileURLWithPath: "/tmp/frontend-design"),
@@ -76,6 +77,7 @@ final class myAgentSkillsTests: XCTestCase {
             ),
             CustomSkillRecord(
                 name: "structured-debugging",
+                originalName: "structured-debugging",
                 description: "Investigate bugs and logs with root-cause clarity",
                 folderName: "structured-debugging",
                 folderURL: URL(fileURLWithPath: "/tmp/structured-debugging"),
@@ -278,6 +280,37 @@ final class myAgentSkillsTests: XCTestCase {
         XCTAssertEqual(sections.last?.skills.map(\.folderName), ["structured-debugging"])
     }
 
+    func testLoadsDisplayAliasFromSkillsJSONWhilePreservingOriginalName() throws {
+        let rootURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        try makeSkill(named: "structured-debugging", description: "Debug work", in: rootURL)
+
+        let catalogJSON = """
+        {
+          "version": 1,
+          "generatedAt": "2026-03-08",
+          "description": "Test catalog",
+          "scopes": [],
+          "skills": [
+            {
+              "folder": "structured-debugging",
+              "name": "Root Cause Sherlock",
+              "scope": "uncategorized"
+            }
+          ]
+        }
+        """
+        try catalogJSON.write(to: rootURL.appendingPathComponent("skills.json"), atomically: true, encoding: .utf8)
+
+        let service = CustomSkillsCatalogService(rootURL: rootURL)
+        let skill = try XCTUnwrap(service.loadSnapshot().skills.first)
+
+        XCTAssertEqual(skill.name, "Root Cause Sherlock")
+        XCTAssertEqual(skill.originalName, "structured-debugging")
+        XCTAssertTrue(skill.hasAlias)
+    }
+
     func testMissingSkillsJSONReportsMissingCategorization() throws {
         let rootURL = makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: rootURL) }
@@ -406,6 +439,145 @@ final class myAgentSkillsTests: XCTestCase {
         XCTAssertTrue(service.loadSnapshot().skills.isEmpty)
     }
 
+    func testRenameSkillUpdatesExistingSkillsJSONEntryNameOnly() throws {
+        let rootURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        try makeSkill(named: "structured-debugging", description: "Debug work", in: rootURL)
+
+        let catalogJSON = """
+        {
+          "version": 1,
+          "generatedAt": "2026-03-08",
+          "description": "Test catalog",
+          "scopes": [
+            {
+              "id": "review",
+              "label": "Review",
+              "description": "Review skills"
+            }
+          ],
+          "skills": [
+            {
+              "folder": "structured-debugging",
+              "name": "structured-debugging",
+              "scope": "review",
+              "platforms": ["generic"],
+              "tags": ["debug"]
+            }
+          ]
+        }
+        """
+        try catalogJSON.write(to: rootURL.appendingPathComponent("skills.json"), atomically: true, encoding: .utf8)
+
+        let service = CustomSkillsCatalogService(rootURL: rootURL)
+        let skill = try XCTUnwrap(service.loadSnapshot().skills.first)
+
+        try service.renameSkill(skill, displayName: "Debug Detective")
+
+        let data = try Data(contentsOf: rootURL.appendingPathComponent("skills.json"))
+        let updatedCatalog = try JSONDecoder().decode(SkillCatalogDefinition.self, from: data)
+        let updatedSkill = try XCTUnwrap(updatedCatalog.skills.first)
+
+        XCTAssertEqual(updatedSkill.folder, "structured-debugging")
+        XCTAssertEqual(updatedSkill.name, "Debug Detective")
+        XCTAssertEqual(updatedSkill.scope, "review")
+        XCTAssertEqual(updatedSkill.platforms, ["generic"])
+        XCTAssertEqual(updatedSkill.tags, ["debug"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: rootURL.appendingPathComponent("structured-debugging").path))
+    }
+
+    func testRenameSkillAppendsAliasEntryForUncategorizedSkill() throws {
+        let rootURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        try makeSkill(named: "frontend-design", description: "UI work", in: rootURL)
+
+        let catalogJSON = """
+        {
+          "version": 1,
+          "generatedAt": "2026-03-08",
+          "description": "Test catalog",
+          "scopes": [],
+          "skills": []
+        }
+        """
+        try catalogJSON.write(to: rootURL.appendingPathComponent("skills.json"), atomically: true, encoding: .utf8)
+
+        let service = CustomSkillsCatalogService(rootURL: rootURL)
+        let skill = try XCTUnwrap(service.loadSnapshot().skills.first)
+
+        try service.renameSkill(skill, displayName: "Frontend Hero")
+
+        let data = try Data(contentsOf: rootURL.appendingPathComponent("skills.json"))
+        let updatedCatalog = try JSONDecoder().decode(SkillCatalogDefinition.self, from: data)
+        let appendedEntry = try XCTUnwrap(updatedCatalog.skills.first(where: { $0.folder == "frontend-design" }))
+
+        XCTAssertEqual(appendedEntry.name, "Frontend Hero")
+        XCTAssertEqual(appendedEntry.scope, "uncategorized")
+    }
+
+    func testRenameSkillFailsWhenSkillsJSONIsMissing() throws {
+        let rootURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        try makeSkill(named: "frontend-design", description: "UI work", in: rootURL)
+
+        let service = CustomSkillsCatalogService(rootURL: rootURL)
+        let skill = try XCTUnwrap(service.loadSnapshot().skills.first)
+
+        XCTAssertThrowsError(try service.renameSkill(skill, displayName: "Frontend Hero")) { error in
+            XCTAssertEqual(
+                error as? CustomSkillMutationError,
+                .missingCategorizationFile(path: rootURL.appendingPathComponent("skills.json").path)
+            )
+        }
+    }
+
+    func testRenameSkillFailsWhenSkillsJSONIsInvalid() throws {
+        let rootURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        try makeSkill(named: "frontend-design", description: "UI work", in: rootURL)
+        try "{ invalid json".write(to: rootURL.appendingPathComponent("skills.json"), atomically: true, encoding: .utf8)
+
+        let service = CustomSkillsCatalogService(rootURL: rootURL)
+        let skill = try XCTUnwrap(service.loadSnapshot().skills.first)
+
+        XCTAssertThrowsError(try service.renameSkill(skill, displayName: "Frontend Hero")) { error in
+            guard case .invalidCategorizationFile(let path, _) = error as? CustomSkillMutationError else {
+                return XCTFail("Expected invalid categorization file error.")
+            }
+            XCTAssertEqual(path, rootURL.appendingPathComponent("skills.json").path)
+        }
+    }
+
+    func testRenameSkillFailsForEmptyDisplayName() throws {
+        let rootURL = makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        try makeSkill(named: "frontend-design", description: "UI work", in: rootURL)
+        try """
+        {
+          "version": 1,
+          "generatedAt": "2026-03-08",
+          "description": "Test catalog",
+          "scopes": [],
+          "skills": []
+        }
+        """.write(to: rootURL.appendingPathComponent("skills.json"), atomically: true, encoding: .utf8)
+
+        let service = CustomSkillsCatalogService(rootURL: rootURL)
+        let skill = try XCTUnwrap(service.loadSnapshot().skills.first)
+
+        XCTAssertThrowsError(try service.renameSkill(skill, displayName: "   ")) { error in
+            XCTAssertEqual(
+                error as? CustomSkillMutationError,
+                .invalidDisplayName(reason: "Enter a display name before saving.")
+            )
+        }
+    }
+
     private func makeTemporaryDirectory() -> URL {
         let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try? FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
@@ -430,6 +602,7 @@ final class myAgentSkillsTests: XCTestCase {
 private func makeCustomSkillRecord(folderName: String, isDisabled: Bool) -> CustomSkillRecord {
     CustomSkillRecord(
         name: folderName,
+        originalName: folderName,
         description: "Description for \(folderName)",
         folderName: folderName,
         folderURL: URL(fileURLWithPath: "/tmp/\(folderName)"),

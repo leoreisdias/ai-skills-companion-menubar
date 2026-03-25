@@ -371,17 +371,14 @@ final class SkillRowBox: NSView {
             $0.setContentHuggingPriority(.required, for: .horizontal)
         }
 
-        let buttonRow = NSStackView(views: actionButtons)
-        buttonRow.orientation = .horizontal
-        buttonRow.spacing = 8
-        buttonRow.alignment = .centerY
-        buttonRow.setContentCompressionResistancePriority(.required, for: .horizontal)
-        buttonRow.setContentHuggingPriority(.required, for: .horizontal)
-
-        let spacer = NSView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let buttonListView = WrappingButtonListView()
+        buttonListView.translatesAutoresizingMaskIntoConstraints = false
+        buttonListView.contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+        buttonListView.itemSpacing = 8
+        buttonListView.lineSpacing = 8
+        buttonListView.setButtons(actionButtons)
+        buttonListView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        buttonListView.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         toggleButton.target = self
         toggleButton.action = #selector(toggleDescription)
@@ -435,14 +432,13 @@ final class SkillRowBox: NSView {
         }
 
         let bottomRow = NSStackView()
-        bottomRow.orientation = .horizontal
-        bottomRow.spacing = 10
-        bottomRow.alignment = .centerY
+        bottomRow.orientation = .vertical
+        bottomRow.spacing = 8
+        bottomRow.alignment = .width
         if isExpandable {
             bottomRow.addArrangedSubview(toggleButton)
         }
-        bottomRow.addArrangedSubview(buttonRow)
-        bottomRow.addArrangedSubview(spacer)
+        bottomRow.addArrangedSubview(buttonListView)
 
         let stack = NSStackView()
         stack.orientation = .vertical

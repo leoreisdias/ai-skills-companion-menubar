@@ -12,17 +12,21 @@ All notable changes to this project will be documented in this file.
 - Project-local packaging metadata via `version.env`.
 - New local developer scripts for `launch` and `compile-and-run` workflows.
 - Post-build bundle validation during packaging, including executable and code-signature inspection.
+- Local skill label aliases in `Global`, stored in `skills.json`, so skills can have app-friendly names without changing their real installed identifiers.
 
 ### Changed
 - App version metadata is now aligned with the public GitHub release versioning scheme.
 - README now documents the update flow and the recommended `/Applications` replacement path for upgrades.
 - The SwiftPM packaging flow is now more defensive about build output paths and emits bundle metadata directly into the packaged app.
 - DMG packaging now reuses the improved app bundle flow and verifies the generated artifact path before finishing.
+- Renamed local skill cards now keep the original skill name visible and use that original identifier for copy or reference actions.
 
 ### Fixed
 - `Global` category chips now wrap instead of getting clipped horizontally when many categories are present.
 - The top tab selector now keeps equal segment widths so the selected state stays visually aligned.
 - Opening the `Auto Categorize` confirmation no longer expands extra content early, which reduces popover layout drift in the `Global` tab.
+- Local skill action buttons now wrap inside cards instead of compressing the card content when the layout gets narrow.
+- The rename label flow now uses a dedicated modal window instead of a broken alert accessory layout.
 
 ## [0.1.0] - 2026-03-09
 

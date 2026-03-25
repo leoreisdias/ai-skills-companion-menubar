@@ -187,7 +187,7 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
 
     @objc private func copySkillName(_ sender: NSButton) {
         guard sender.tag >= 0, sender.tag < filteredSkills.count else { return }
-        copyToPasteboard(filteredSkills[sender.tag].name)
+        copyToPasteboard(filteredSkills[sender.tag].originalName)
     }
 
     @objc private func openSkillFile(_ sender: NSButton) {
@@ -234,6 +234,22 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
         do {
             try catalogService.trashSkill(skill)
             transientStatusMessage = "Moved `\(skill.name)` to the Trash."
+            reloadData(preserveTransientStatus: true)
+        } catch {
+            transientStatusMessage = error.localizedDescription
+            applyFilter()
+        }
+    }
+
+    @objc private func renameSkill(_ sender: NSButton) {
+        guard sender.tag >= 0, sender.tag < filteredSkills.count else { return }
+        let skill = filteredSkills[sender.tag]
+
+        guard let newDisplayName = promptForSkillDisplayName(skill: skill) else { return }
+
+        do {
+            try catalogService.renameSkill(skill, displayName: newDisplayName)
+            transientStatusMessage = "Saved `\(skill.originalName)` as `\(newDisplayName)` for display in the app."
             reloadData(preserveTransientStatus: true)
         } catch {
             transientStatusMessage = error.localizedDescription
@@ -627,8 +643,10 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
 
     private func cardView(for skill: CustomSkillRecord) -> NSView {
         let index = filteredSkills.firstIndex(of: skill) ?? 0
-        let copyButton = makeActionButton("Copy Name", target: self, action: #selector(copySkillName(_:)))
+        let copyButton = makeActionButton("Copy Original", target: self, action: #selector(copySkillName(_:)))
         copyButton.tag = index
+        let renameButton = makeActionButton("Rename Label", target: self, action: #selector(renameSkill(_:)))
+        renameButton.tag = index
         let fileButton = makeActionButton("Open SKILL.md", target: self, action: #selector(openSkillFile(_:)))
         fileButton.tag = index
         let folderButton = makeActionButton("Open Folder", target: self, action: #selector(openSkillFolder(_:)))
@@ -651,13 +669,21 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
 
         return SkillRowBox(
             title: skill.name,
-            subtitle: "",
+            subtitle: skill.hasAlias ? "Original: \(skill.originalName)" : "",
             body: skill.description,
-            actionButtons: [copyButton, fileButton, folderButton],
+            actionButtons: [copyButton, renameButton, fileButton, folderButton],
             headerAccessoryViews: [enabledSwitch, trashButton],
             statusText: skill.isDisabled ? "Disabled" : nil,
             isDimmed: skill.isDisabled
         )
+    }
+
+    private func promptForSkillDisplayName(skill: CustomSkillRecord) -> String? {
+        let controller = RenameSkillWindowController(
+            initialValue: skill.name,
+            originalName: skill.originalName
+        )
+        return controller.runModal()
     }
 
     private func skillsMatchingSelectedCategory(_ skills: [CustomSkillRecord]) -> [CustomSkillRecord] {
@@ -803,5 +829,156 @@ private final class CategorizationHelpWindowController: NSWindowController {
 
     @objc private func closeWindow() {
         close()
+    }
+}
+
+@MainActor
+private final class RenameSkillWindowController: NSWindowController, NSTextFieldDelegate {
+    private let textField: NSTextField
+    private let validationLabel: NSTextField
+    private let cancelButton: NSButton
+    private let saveButton: NSButton
+    private var result: String?
+
+    init(initialValue: String, originalName: String) {
+        self.textField = NSTextField(string: initialValue)
+        self.validationLabel = makeSecondaryLabel("")
+        self.cancelButton = NSButton(title: "Cancel", target: nil, action: nil)
+        self.saveButton = NSButton(title: "Save Label", target: nil, action: nil)
+
+        let contentViewController = NSViewController()
+        let contentView = NSView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        contentViewController.view = contentView
+
+        let titleLabel = NSTextField(labelWithString: "Rename skill label")
+        titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
+
+        let descriptionLabel = makeBodyLabel(
+            "This changes only how the skill appears in AI Skills Companion. The original skill name stays the same."
+        )
+        descriptionLabel.textColor = .secondaryLabelColor
+
+        let originalNameLabel = makeSecondaryLabel("Original skill name: \(originalName)")
+        originalNameLabel.lineBreakMode = .byTruncatingMiddle
+
+        textField.placeholderString = "Display name"
+        textField.controlSize = .regular
+        textField.font = .systemFont(ofSize: 13)
+        textField.translatesAutoresizingMaskIntoConstraints = false
+
+        validationLabel.textColor = .systemRed
+        validationLabel.isHidden = true
+        validationLabel.lineBreakMode = .byWordWrapping
+        validationLabel.maximumNumberOfLines = 2
+
+        cancelButton.controlSize = .regular
+
+        saveButton.controlSize = .regular
+        saveButton.keyEquivalent = "\r"
+
+        let buttonSpacer = NSView()
+        buttonSpacer.translatesAutoresizingMaskIntoConstraints = false
+        buttonSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        buttonSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let buttonRow = NSStackView(views: [buttonSpacer, cancelButton, saveButton])
+        buttonRow.orientation = .horizontal
+        buttonRow.spacing = 10
+        buttonRow.alignment = .centerY
+        buttonRow.translatesAutoresizingMaskIntoConstraints = false
+
+        let stack = NSStackView(views: [titleLabel, descriptionLabel, originalNameLabel, textField, validationLabel, buttonRow])
+        stack.orientation = .vertical
+        stack.spacing = 12
+        stack.alignment = .width
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        contentView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            contentView.widthAnchor.constraint(equalToConstant: 420),
+            textField.heightAnchor.constraint(equalToConstant: 28),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+        ])
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 250),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Rename skill label"
+        window.contentViewController = contentViewController
+        window.isReleasedWhenClosed = false
+        window.center()
+
+        super.init(window: window)
+
+        textField.delegate = self
+        cancelButton.target = self
+        cancelButton.action = #selector(cancel)
+        saveButton.target = self
+        saveButton.action = #selector(save)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func runModal() -> String? {
+        guard let window else { return nil }
+        showWindow(nil)
+        window.center()
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.initialFirstResponder = textField
+        window.makeFirstResponder(textField)
+        _ = NSApp.runModal(for: window)
+        window.orderOut(nil)
+        return result
+    }
+
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+            save()
+            return true
+        }
+        return false
+    }
+
+    @objc private func save() {
+        let trimmedValue = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedValue.isEmpty {
+            showValidation("Enter a display name before saving.")
+            return
+        }
+
+        if trimmedValue.rangeOfCharacter(from: .newlines) != nil {
+            showValidation("Display names must stay on a single line.")
+            return
+        }
+
+        result = trimmedValue
+        closeModal()
+    }
+
+    @objc private func cancel() {
+        result = nil
+        closeModal()
+    }
+
+    private func showValidation(_ message: String) {
+        validationLabel.stringValue = message
+        validationLabel.isHidden = false
+    }
+
+    private func closeModal() {
+        guard let window else { return }
+        NSApp.stopModal()
+        window.close()
     }
 }

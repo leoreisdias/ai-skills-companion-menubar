@@ -256,6 +256,7 @@ enum CustomSkillStorageLocation: String, Equatable, Hashable {
 
 struct CustomSkillRecord: Equatable, Hashable {
     let name: String
+    let originalName: String
     let description: String
     let folderName: String
     let folderURL: URL
@@ -268,8 +269,12 @@ struct CustomSkillRecord: Equatable, Hashable {
     let tags: [String]
     let platforms: [String]
 
+    var hasAlias: Bool {
+        name != originalName
+    }
+
     var searchableText: String {
-        [name, description].joined(separator: " ").lowercased()
+        [name, originalName, description, folderName].joined(separator: " ").lowercased()
     }
 }
 
