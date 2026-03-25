@@ -8,7 +8,4 @@ script = ""
 [[actions]]
 name = "Run"
 icon = "run"
-command = '''
-pkill -x myAgentSkills
-open "AI Skills Companion.app"
-'''
+command = "./launch.sh"

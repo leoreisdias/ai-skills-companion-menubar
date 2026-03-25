@@ -9,10 +9,20 @@ All notable changes to this project will be documented in this file.
 - GitHub Releases integration to detect newer versions of AI Skills Companion.
 - Inline update banner with `Download DMG` and `Open Release` actions.
 - Automatic DMG download to the user's Downloads folder, followed by automatic opening of the downloaded file.
+- Project-local packaging metadata via `version.env`.
+- New local developer scripts for `launch` and `compile-and-run` workflows.
+- Post-build bundle validation during packaging, including executable and code-signature inspection.
 
 ### Changed
 - App version metadata is now aligned with the public GitHub release versioning scheme.
 - README now documents the update flow and the recommended `/Applications` replacement path for upgrades.
+- The SwiftPM packaging flow is now more defensive about build output paths and emits bundle metadata directly into the packaged app.
+- DMG packaging now reuses the improved app bundle flow and verifies the generated artifact path before finishing.
+
+### Fixed
+- `Global` category chips now wrap instead of getting clipped horizontally when many categories are present.
+- The top tab selector now keeps equal segment widths so the selected state stays visually aligned.
+- Opening the `Auto Categorize` confirmation no longer expands extra content early, which reduces popover layout drift in the `Global` tab.
 
 ## [0.1.0] - 2026-03-09
 

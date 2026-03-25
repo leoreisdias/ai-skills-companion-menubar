@@ -35,14 +35,13 @@ AI Skills Companion gives you:
 ### Build
 
 ```bash
-swift build
 ./build-app.sh
 ```
 
 ### Run
 
 ```bash
-open "AI Skills Companion.app"
+./launch.sh
 ```
 
 ### Install in Applications
@@ -54,6 +53,16 @@ cp -r "AI Skills Companion.app" /Applications/
 ```
 
 After that, you can launch it like any other Mac app without needing to open it from the project folder each time.
+
+### Version Metadata
+
+Build metadata now lives in:
+
+```bash
+./version.env
+```
+
+This file controls the packaged app version, build number, bundle identifier, and menu bar flag without requiring you to hand-edit the generated `.app` bundle.
 
 ### Menu Bar Behavior
 
@@ -407,9 +416,9 @@ If your local toolchain cannot import `XCTest`, align Xcode / Command Line Tools
 Recommended validation commands:
 
 ```bash
-swift build
 swift test
 ./build-app.sh
+./compile_and_run.sh
 ```
 
 The packaged app is generated as:
