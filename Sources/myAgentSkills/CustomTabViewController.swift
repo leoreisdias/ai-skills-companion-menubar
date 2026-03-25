@@ -19,7 +19,7 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
     private let searchField = NSSearchField()
     private let bannerContainer = NSView()
     private let categoryFiltersContainer = NSView()
-    private let categoryFiltersStack = NSStackView()
+    private let categoryFiltersView = WrappingButtonListView()
     private let rowsScrollView = NSScrollView()
     private let rowsStack = NSStackView()
     private let autoCategorizeOutput = makeCommandOutputView()
@@ -80,43 +80,18 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
 
         bannerContainer.translatesAutoresizingMaskIntoConstraints = false
         categoryFiltersContainer.translatesAutoresizingMaskIntoConstraints = false
+        categoryFiltersView.translatesAutoresizingMaskIntoConstraints = false
         autoCategorizeOverlay.translatesAutoresizingMaskIntoConstraints = false
         autoCategorizeOverlay.isHidden = true
         autoCategorizeOverlay.wantsLayer = true
         autoCategorizeOverlay.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.06).cgColor
 
-        let categoryFiltersScrollView = NSScrollView()
-        categoryFiltersScrollView.borderType = .noBorder
-        categoryFiltersScrollView.hasHorizontalScroller = false
-        categoryFiltersScrollView.hasVerticalScroller = false
-        categoryFiltersScrollView.horizontalScrollElasticity = .allowed
-        categoryFiltersScrollView.scrollerStyle = .overlay
-        categoryFiltersScrollView.drawsBackground = false
-        categoryFiltersScrollView.translatesAutoresizingMaskIntoConstraints = false
-
-        let categoryFiltersContentView = FlippedContentView()
-        categoryFiltersContentView.translatesAutoresizingMaskIntoConstraints = false
-        categoryFiltersScrollView.documentView = categoryFiltersContentView
-
-        categoryFiltersStack.orientation = .horizontal
-        categoryFiltersStack.spacing = 8
-        categoryFiltersStack.alignment = .centerY
-        categoryFiltersStack.translatesAutoresizingMaskIntoConstraints = false
-        categoryFiltersContentView.addSubview(categoryFiltersStack)
-
-        categoryFiltersContainer.addSubview(categoryFiltersScrollView)
+        categoryFiltersContainer.addSubview(categoryFiltersView)
         NSLayoutConstraint.activate([
-            categoryFiltersScrollView.leadingAnchor.constraint(equalTo: categoryFiltersContainer.leadingAnchor),
-            categoryFiltersScrollView.trailingAnchor.constraint(equalTo: categoryFiltersContainer.trailingAnchor),
-            categoryFiltersScrollView.topAnchor.constraint(equalTo: categoryFiltersContainer.topAnchor),
-            categoryFiltersScrollView.bottomAnchor.constraint(equalTo: categoryFiltersContainer.bottomAnchor),
-            categoryFiltersScrollView.heightAnchor.constraint(equalToConstant: 36),
-
-            categoryFiltersStack.leadingAnchor.constraint(equalTo: categoryFiltersContentView.leadingAnchor, constant: 4),
-            categoryFiltersStack.topAnchor.constraint(equalTo: categoryFiltersContentView.topAnchor),
-            categoryFiltersStack.bottomAnchor.constraint(equalTo: categoryFiltersContentView.bottomAnchor),
-            categoryFiltersStack.trailingAnchor.constraint(equalTo: categoryFiltersContentView.trailingAnchor, constant: -4),
-            categoryFiltersContentView.heightAnchor.constraint(equalTo: categoryFiltersScrollView.contentView.heightAnchor)
+            categoryFiltersView.leadingAnchor.constraint(equalTo: categoryFiltersContainer.leadingAnchor),
+            categoryFiltersView.trailingAnchor.constraint(equalTo: categoryFiltersContainer.trailingAnchor),
+            categoryFiltersView.topAnchor.constraint(equalTo: categoryFiltersContainer.topAnchor),
+            categoryFiltersView.bottomAnchor.constraint(equalTo: categoryFiltersContainer.bottomAnchor)
         ])
 
         let rowsColumn = makeScrollableColumn(minHeight: 420, scrollView: rowsScrollView)
@@ -424,19 +399,16 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
     }
 
     private func renderCategoryFilters() {
-        categoryFiltersStack.arrangedSubviews.forEach {
-            categoryFiltersStack.removeArrangedSubview($0)
-            $0.removeFromSuperview()
-        }
-
         let options = categoryFilterOptions()
         currentCategoryFilterOptions = options
         guard options.count > 1 else {
             categoryFiltersContainer.isHidden = true
+            categoryFiltersView.setButtons([])
             return
         }
 
         categoryFiltersContainer.isHidden = false
+        var buttons: [NSButton] = []
         for (index, option) in options.enumerated() {
             let button = makeFilterChipButton(
                 option.title,
@@ -445,8 +417,9 @@ final class CustomTabViewController: NSViewController, NSSearchFieldDelegate {
                 isSelected: selectedCategoryID == option.id
             )
             button.tag = index
-            categoryFiltersStack.addArrangedSubview(button)
+            buttons.append(button)
         }
+        categoryFiltersView.setButtons(buttons)
     }
 
     private func renderRows() {

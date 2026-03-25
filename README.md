@@ -62,6 +62,27 @@ After that, you can launch it like any other Mac app without needing to open it 
 - Clicking outside the popover closes it automatically.
 - Pressing `Esc` closes the popover too.
 
+### App Updates
+
+AI Skills Companion can check GitHub Releases for a newer version.
+
+- Click `Check for Updates` in the popover header.
+- If a newer release exists, the app shows:
+  - your current version
+  - the latest version
+  - a `Download DMG` action
+  - an `Open Release` action
+- `Download DMG` saves the latest DMG into your Downloads folder and opens it automatically.
+
+To replace the current app cleanly:
+
+1. keep your current app in `/Applications`
+2. open the downloaded DMG
+3. drag the new `AI Skills Companion.app` into `Applications`
+4. choose `Replace` if Finder asks
+
+That replaces the app bundle itself, not your preferences or local skill files.
+
 ## What The App Contains
 
 The app has 3 tabs:

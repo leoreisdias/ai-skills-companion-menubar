@@ -2,6 +2,44 @@ import XCTest
 @testable import myAgentSkills
 
 final class myAgentSkillsTests: XCTestCase {
+    func testAppVersionComparesSemantically() {
+        XCTAssertTrue(AppVersion("v0.1.1") > AppVersion("0.1.0"))
+        XCTAssertTrue(AppVersion("1.0.0") > AppVersion("0.9.9"))
+        XCTAssertEqual(AppVersion("v0.1.0"), AppVersion("0.1.0"))
+    }
+
+    func testUpdateServicePicksPreferredDMGAsset() throws {
+        let json = """
+        {
+          "tag_name": "v0.1.1",
+          "html_url": "https://github.com/logbookfordevs/ai-skills-companion-menubar/releases/tag/v0.1.1",
+          "body": "Release notes",
+          "assets": [
+            {
+              "name": "checksums.txt",
+              "browser_download_url": "https://example.com/checksums.txt"
+            },
+            {
+              "name": "AI Skills Companion.dmg",
+              "browser_download_url": "https://example.com/AI%20Skills%20Companion.dmg"
+            }
+          ]
+        }
+        """
+
+        let release = try JSONDecoder().decode(GitHubRelease.self, from: Data(json.utf8))
+        let info = AppUpdateInfo(
+            currentVersion: AppVersion("0.1.0"),
+            latestVersion: AppVersion(release.tagName),
+            releaseURL: release.htmlURL,
+            downloadURL: release.assets.first(where: { $0.name == "AI Skills Companion.dmg" })?.downloadURL,
+            releaseNotes: release.body ?? ""
+        )
+
+        XCTAssertEqual(info.latestVersion, AppVersion("0.1.1"))
+        XCTAssertEqual(info.downloadURL?.absoluteString, "https://example.com/AI%20Skills%20Companion.dmg")
+    }
+
     func testParsesCustomSkillFrontmatter() {
         let contents = """
         ---

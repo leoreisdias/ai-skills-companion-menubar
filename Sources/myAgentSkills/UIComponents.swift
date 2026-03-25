@@ -1,8 +1,111 @@
 import AppKit
 
 @MainActor
-final class FlippedContentView: NSView {
+class FlippedContentView: NSView {
     override var isFlipped: Bool { true }
+}
+
+@MainActor
+final class WrappingButtonListView: FlippedContentView {
+    var contentInsets = NSEdgeInsets(top: 0, left: 4, bottom: 0, right: 4) {
+        didSet {
+            invalidateLayout()
+        }
+    }
+
+    var itemSpacing: CGFloat = 8 {
+        didSet {
+            invalidateLayout()
+        }
+    }
+
+    var lineSpacing: CGFloat = 8 {
+        didSet {
+            invalidateLayout()
+        }
+    }
+
+    private var buttons: [NSButton] = []
+    private var cachedHeight: CGFloat = 0
+
+    override var intrinsicContentSize: NSSize {
+        let availableWidth = bounds.width > 0 ? bounds.width : fallbackWidth()
+        let height = measuredHeight(forWidth: availableWidth)
+        return NSSize(width: NSView.noIntrinsicMetric, height: height)
+    }
+
+    func setButtons(_ buttons: [NSButton]) {
+        self.buttons.forEach { $0.removeFromSuperview() }
+        self.buttons = buttons
+
+        for button in buttons {
+            button.translatesAutoresizingMaskIntoConstraints = true
+            addSubview(button)
+        }
+
+        invalidateLayout()
+    }
+
+    override func layout() {
+        super.layout()
+        let height = layoutButtons(forWidth: bounds.width, applyFrames: true)
+        updateCachedHeight(height)
+    }
+
+    private func fallbackWidth() -> CGFloat {
+        let buttonWidths = buttons.map { $0.fittingSize.width }
+        let contentWidth = buttonWidths.reduce(0, +)
+        let spacingWidth = itemSpacing * CGFloat(max(buttonWidths.count - 1, 0))
+        return max(1, contentInsets.left + contentWidth + spacingWidth + contentInsets.right)
+    }
+
+    private func measuredHeight(forWidth width: CGFloat) -> CGFloat {
+        layoutButtons(forWidth: width, applyFrames: false)
+    }
+
+    @discardableResult
+    private func layoutButtons(forWidth width: CGFloat, applyFrames: Bool) -> CGFloat {
+        guard !buttons.isEmpty else { return 0 }
+
+        let availableWidth = max(1, width)
+        let maxButtonWidth = max(1, availableWidth - contentInsets.left - contentInsets.right)
+        var currentX = contentInsets.left
+        var currentY = contentInsets.top
+        var currentRowHeight: CGFloat = 0
+
+        for button in buttons {
+            var size = button.fittingSize
+            size.width = min(size.width, maxButtonWidth)
+
+            if currentX > contentInsets.left, currentX + size.width > availableWidth - contentInsets.right {
+                currentX = contentInsets.left
+                currentY += currentRowHeight + lineSpacing
+                currentRowHeight = 0
+            }
+
+            if applyFrames {
+                button.frame = NSRect(origin: CGPoint(x: currentX, y: currentY), size: size)
+            }
+
+            currentX += size.width + itemSpacing
+            currentRowHeight = max(currentRowHeight, size.height)
+        }
+
+        return currentY + currentRowHeight + contentInsets.bottom
+    }
+
+    private func invalidateLayout() {
+        needsLayout = true
+        invalidateIntrinsicContentSize()
+        superview?.needsLayout = true
+    }
+
+    private func updateCachedHeight(_ height: CGFloat) {
+        guard abs(cachedHeight - height) > 0.5 else { return }
+        cachedHeight = height
+        invalidateIntrinsicContentSize()
+        superview?.needsLayout = true
+    }
 }
 
 @MainActor
@@ -80,6 +183,7 @@ func makeFilterChipButton(_ title: String, target: AnyObject?, action: Selector,
     button.font = .systemFont(ofSize: 13, weight: .semibold)
     button.setButtonType(.momentaryPushIn)
     button.imagePosition = .noImage
+    (button.cell as? NSButtonCell)?.lineBreakMode = .byTruncatingTail
     button.bezelColor = isSelected
         ? .controlAccentColor
         : NSColor.quaternaryLabelColor.withAlphaComponent(0.14)
