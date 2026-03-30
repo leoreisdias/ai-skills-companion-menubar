@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Next Release] - Unreleased
+## [0.1.1] - 2026-03-29
 
 ### Added
 - Global `Check for Updates` flow in the popover header.
@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - New local developer scripts for `launch` and `compile-and-run` workflows.
 - Post-build bundle validation during packaging, including executable and code-signature inspection.
 - Local skill label aliases in `Global`, stored in `skills.json`, so skills can have app-friendly names without changing their real installed identifiers.
+- Codex-powered re-categorization flow for `Global`, so an already categorized library can be reorganized with new guidance.
+- Live OpenSpec coverage for local skill renaming and re-categorization capabilities.
 
 ### Changed
 - App version metadata is now aligned with the public GitHub release versioning scheme.
@@ -20,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - The SwiftPM packaging flow is now more defensive about build output paths and emits bundle metadata directly into the packaged app.
 - DMG packaging now reuses the improved app bundle flow and verifies the generated artifact path before finishing.
 - Renamed local skill cards now keep the original skill name visible and use that original identifier for copy or reference actions.
+- Healthy categorized libraries now surface `Re-categorize` as a lightweight action instead of a persistent banner.
 
 ### Fixed
 - `Global` category chips now wrap instead of getting clipped horizontally when many categories are present.
@@ -27,6 +30,8 @@ All notable changes to this project will be documented in this file.
 - Opening the `Auto Categorize` confirmation no longer expands extra content early, which reduces popover layout drift in the `Global` tab.
 - Local skill action buttons now wrap inside cards instead of compressing the card content when the layout gets narrow.
 - The rename label flow now uses a dedicated modal window instead of a broken alert accessory layout.
+- Running categorization no longer reintroduces a large banner layout jump in `Global`.
+- `Per Agent` sections now keep their full width instead of collapsing into a shrinked layout.
 
 ## [0.1.0] - 2026-03-09
 
