@@ -1,0 +1,141 @@
+{
+  "projectId": "14905588168099202156",
+  "name": "projects/14905588168099202156",
+  "title": "AI Skills Companion Electron Pivot",
+  "source": "Stitch MCP",
+  "capturedAt": "2026-04-22T22:49:29.445Z",
+  "screens": [
+    {
+      "title": "Skill Library (Refined)",
+      "slug": "skill-library-refined",
+      "screenId": "4ee13afb13aa4dfca2e606317bcedbd0",
+      "resource": "projects/14905588168099202156/screens/4ee13afb13aa4dfca2e606317bcedbd0",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/skill-library-refined.html",
+      "screenshot": ".stitch/designs/skill-library-refined.png"
+    },
+    {
+      "title": "Coming Soon - AI Skills Companion",
+      "slug": "coming-soon-ai-skills-companion",
+      "screenId": "8b470c470d384760ba5fa80390f114a6",
+      "resource": "projects/14905588168099202156/screens/8b470c470d384760ba5fa80390f114a6",
+      "deviceType": "DESKTOP",
+      "width": 2816,
+      "height": 3100,
+      "html": ".stitch/designs/coming-soon-ai-skills-companion.html",
+      "screenshot": ".stitch/designs/coming-soon-ai-skills-companion.png"
+    },
+    {
+      "title": "Catalog Backup",
+      "slug": "catalog-backup",
+      "screenId": "de3664aa36134281ab0dd4a9f31e162f",
+      "resource": "projects/14905588168099202156/screens/de3664aa36134281ab0dd4a9f31e162f",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/catalog-backup.html",
+      "screenshot": ".stitch/designs/catalog-backup.png"
+    },
+    {
+      "title": "Catalog Backup - Corrected Flow",
+      "slug": "catalog-backup-corrected-flow",
+      "screenId": "8f5f45e864414ec397c80371d2ee68d6",
+      "resource": "projects/14905588168099202156/screens/8f5f45e864414ec397c80371d2ee68d6",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2522,
+      "html": ".stitch/designs/catalog-backup-corrected-flow.html",
+      "screenshot": ".stitch/designs/catalog-backup-corrected-flow.png"
+    },
+    {
+      "title": "Global Library - AI Skills Companion",
+      "slug": "global-library-ai-skills-companion",
+      "screenId": "f879b1fed7734248aa508cf7f9a5c6c0",
+      "resource": "projects/14905588168099202156/screens/f879b1fed7734248aa508cf7f9a5c6c0",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/global-library-ai-skills-companion.html",
+      "screenshot": ".stitch/designs/global-library-ai-skills-companion.png"
+    },
+    {
+      "title": "Skill Library - Corrected Product State",
+      "slug": "skill-library-corrected-product-state",
+      "screenId": "f22ce27e616e491a8a5e09f607c04140",
+      "resource": "projects/14905588168099202156/screens/f22ce27e616e491a8a5e09f607c04140",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/skill-library-corrected-product-state.html",
+      "screenshot": ".stitch/designs/skill-library-corrected-product-state.png"
+    },
+    {
+      "title": "Catalog Backup - Local Export Flow",
+      "slug": "catalog-backup-local-export-flow",
+      "screenId": "4cff2c0984a544b780bf3ee6585a1860",
+      "resource": "projects/14905588168099202156/screens/4cff2c0984a544b780bf3ee6585a1860",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2082,
+      "html": ".stitch/designs/catalog-backup-local-export-flow.html",
+      "screenshot": ".stitch/designs/catalog-backup-local-export-flow.png"
+    },
+    {
+      "title": "Settings - AI Skills Companion",
+      "slug": "settings-ai-skills-companion",
+      "screenId": "09dc8770309941e38a0e95d41a1b8070",
+      "resource": "projects/14905588168099202156/screens/09dc8770309941e38a0e95d41a1b8070",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2648,
+      "html": ".stitch/designs/settings-ai-skills-companion.html",
+      "screenshot": ".stitch/designs/settings-ai-skills-companion.png"
+    },
+    {
+      "title": "Per Agent - AI Skills Companion",
+      "slug": "per-agent-ai-skills-companion",
+      "screenId": "7bfd05e214e1483b936197fe67da437a",
+      "resource": "projects/14905588168099202156/screens/7bfd05e214e1483b936197fe67da437a",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/per-agent-ai-skills-companion.html",
+      "screenshot": ".stitch/designs/per-agent-ai-skills-companion.png"
+    },
+    {
+      "title": "Skill Library - Full Table View",
+      "slug": "skill-library-full-table-view",
+      "screenId": "8f23d448d02549048085e0d0435089c2",
+      "resource": "projects/14905588168099202156/screens/8f23d448d02549048085e0d0435089c2",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/skill-library-full-table-view.html",
+      "screenshot": ".stitch/designs/skill-library-full-table-view.png"
+    },
+    {
+      "title": "Hub - AI Skills Companion",
+      "slug": "hub-ai-skills-companion",
+      "screenId": "cc63283453fb44558f3cf334957fcbb4",
+      "resource": "projects/14905588168099202156/screens/cc63283453fb44558f3cf334957fcbb4",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/hub-ai-skills-companion.html",
+      "screenshot": ".stitch/designs/hub-ai-skills-companion.png"
+    },
+    {
+      "title": "Overview - AI Skills Companion",
+      "slug": "overview-ai-skills-companion",
+      "screenId": "01214e21491444c09f24753a61739c62",
+      "resource": "projects/14905588168099202156/screens/01214e21491444c09f24753a61739c62",
+      "deviceType": "DESKTOP",
+      "width": 2560,
+      "height": 2048,
+      "html": ".stitch/designs/overview-ai-skills-companion.html",
+      "screenshot": ".stitch/designs/overview-ai-skills-companion.png"
+    }
+  ]
+}
