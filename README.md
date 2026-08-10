@@ -1,5 +1,8 @@
 # AI Skills Companion
 
+> [!IMPORTANT]
+> **This project is archived and no longer receives support.** Its role has been superseded by the [AI Field Kit CLI](https://github.com/logbookfordevs/ai-field-kit), which is the maintained path for discovering and managing AFK skills and tooling. This repository remains available as a historical reference.
+
 <p align="center">
   <img src="assets/icon.png" width="128" height="128" alt="AI Skills Companion icon">
 </p>
